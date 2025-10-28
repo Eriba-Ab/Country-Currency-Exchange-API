@@ -1,72 +1,73 @@
-# 🌍 Country Currency Exchange API
+# Country Currency & Exchange API
 
-A simple Node.js + Express API that converts between currencies using live exchange rates.
+Backend service that:
+- Fetches country data from restcountries.com
+- Fetches USD-based exchange rates from open.er-api.com
+- Computes estimated_gdp = population × random(1000–2000) ÷ exchange_rate
+- Stores/updates records in MySQL
+- Generates a summary PNG at cache/summary.png after each refresh
 
-## 🚀 Features
-- Real-time currency conversion
-- Country-based currency support
-- RESTful endpoint design
+## Endpoints
+- POST /countries/refresh -> fetch & cache (writes DB, generates image)
+- GET /countries -> list countries. Query params: ?region=Africa | ?currency=NGN | ?sort=gdp_desc
+- GET /countries/:name -> get single country by name (case-insensitive)
+- DELETE /countries/:name -> delete by name
+- GET /status -> { total_countries, last_refreshed_at }
+- GET /countries/image -> serve cache/summary.png
 
-## 🧠 Example
-GET /api/exchange?from=USD&to=NGN&amount=100
-
-
-Response:
-```json
-{
-  "from": "USD",
-  "to": "NGN",
-  "amount": 100,
-  "conversion_rate": 1600.5,
-  "conversion_result": 160050
-}
-
-## ⚙️ Setup
-git clone https://github.com/your-username/country-currency-exchange-api.git
-cd country-currency-exchange-api
-npm install
-cp .env.example .env
-npm run dev
+## Env / config
+Copy `.env.example` to `.env` and edit:
+PORT=3000
+DB_HOST=...
+DB_PORT=3306
+DB_NAME=...
+DB_USER=...
+DB_PASS=...
+EXTERNAL_TIMEOUT=15000
 
 
----
+## Setup (Linux / macOS)
+1. Install system deps for `canvas`:
+   - On Ubuntu:
+     ```
+     sudo apt-get update
+     sudo apt-get install -y build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev
+     ```
+   - On macOS (Homebrew):
+     ```
+     brew install pkg-config cairo pango libpng jpeg giflib librsvg
+     ```
 
-## 🧩 GIT Commands to Create Repo
+2. Install dependencies:
+    npm install
 
-Run these step-by-step:
 
-```bash
-# 1. Create and enter project folder
-mkdir country-currency-exchange-api
-cd country-currency-exchange-api
+3. Create DB and run migration:
+- Create database `country_exchange_db` (or name from `.env`)
+- Option A: Run SQL migration:
+    node src/migrations/run_migration.js
+- Option B: `sequelize.sync()` is called on server start (dev convenience).
 
-# 2. Initialize git repo
-git init
+4. Start server:
+    npm start
 
-# 3. Initialize npm project
-npm init -y
 
-# 4. Create folders
-mkdir -p src/{routes,controllers,services,utils}
+## Using Railway
+1. Create a new Railway project.
+2. Connect your GitHub repo or push code to Railway.
+3. Add environment variables (PORT, DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS, EXTERNAL_TIMEOUT).
+4. Set Start Command: `node src/server.js`
+5. Deploy.
 
-# 5. Create files
-touch src/app.js src/server.js src/routes/exchangeRoutes.js \
-      src/controllers/exchangeController.js src/services/exchangeService.js \
-      src/utils/apiClient.js .env .gitignore README.md LICENSE
+## Notes & Implementation details
+- If a country has **no currencies**, `currency_code` is stored as `null`, `exchange_rate` is `null`, `estimated_gdp` is `0` (per spec) and the record is stored.
+- If `currency_code` is present but not found in exchange API rates, we set `exchange_rate` to `null` and `estimated_gdp` to `null`.
+- Refresh is transactional: if external API calls fail the database is not modified and a 503 is returned.
+- Generated image: `cache/summary.png` contains total countries, top 5 by `estimated_gdp` (if available), and timestamp.
 
-# 6. Install dependencies
-npm install express axios dotenv
-npm install --save-dev nodemon
+## Error responses
+- 400 → `{"error":"Validation failed", "details":{...}}`
+- 404 → `{"error":"Country not found"}`
+- 503 → `{"error":"External data source unavailable", "details":"Could not fetch data from [API name]"}`
+- 500 → `{"error":"Internal server error"}`
 
-# 7. Add files to git
-git add .
-
-# 8. Commit changes
-git commit -m "Initial commit: Country Currency Exchange API setup"
-
-# 9. Add remote repo
-git remote add origin https://github.com/<your-username>/country-currency-exchange-api.git
-
-# 10. Push to GitHub
-git branch -M main
-git push -u origin main
