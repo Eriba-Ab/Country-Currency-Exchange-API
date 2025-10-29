@@ -3,24 +3,22 @@ require('dotenv').config();
 
 let sequelize;
 
-// Check if we're running on Railway (it provides DATABASE_URL)
-if (process.env.DATABASE_URL) {
-  // Parse the DATABASE_URL to extract the components
-  const dbUrl = new URL(process.env.DATABASE_URL);
-  
+// Check if we're running on Railway (it provides MYSQLDATABASE, MYSQLHOST, etc.)
+if (process.env.RAILWAY_ENVIRONMENT) {
   sequelize = new Sequelize({
     dialect: 'mysql',
-    host: dbUrl.hostname,
-    port: dbUrl.port,
-    username: dbUrl.username,
-    password: dbUrl.password,
-    database: dbUrl.pathname.substr(1), // Remove the leading '/'
+    host: process.env.MYSQLHOST,
+    port: process.env.MYSQLPORT,
+    username: process.env.MYSQLUSER,
+    password: process.env.MYSQLPASSWORD,
+    database: process.env.MYSQLDATABASE,
     logging: false,
     dialectOptions: {
-      ssl: {
+      ssl: process.env.MYSQL_ATTR_SSL_CA ? {
         require: true,
-        rejectUnauthorized: false
-      }
+        rejectUnauthorized: false,
+        ca: process.env.MYSQL_ATTR_SSL_CA
+      } : false
     }
   });
 } else {
