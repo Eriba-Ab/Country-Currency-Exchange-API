@@ -2,8 +2,9 @@ const express = require('express');
 const router = express.Router();
 const controller = require('../controllers/countryController');
 
-// POST /countries/refresh
+// POST & GET /countries/refresh
 router.post('/refresh', controller.postRefresh);
+router.get('/refresh', controller.postRefresh);  // Add GET support for easier testing
 
 // GET /countries
 router.get('/', controller.getCountries);
