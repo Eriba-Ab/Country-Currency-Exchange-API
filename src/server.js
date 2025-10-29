@@ -4,8 +4,16 @@ const { sequelize } = require('./models');
 
 const PORT = process.env.PORT || 3000;
 
+const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
 async function start() {
   try {
+    // Add a small delay to ensure database is ready
+    if (process.env.DATABASE_URL) {
+      console.log('Waiting for database to be ready...');
+      await wait(5000); // 5 second delay
+    }
+    
     await sequelize.authenticate();
     console.log('DB connected');
     // ensure table exists using sync (suitable for dev). In production use migrations.

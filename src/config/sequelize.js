@@ -5,12 +5,21 @@ let sequelize;
 
 // Check if we're running on Railway (it provides DATABASE_URL)
 if (process.env.DATABASE_URL) {
-  sequelize = new Sequelize(process.env.DATABASE_URL, {
+  // Parse the DATABASE_URL to extract the components
+  const dbUrl = new URL(process.env.DATABASE_URL);
+  
+  sequelize = new Sequelize({
     dialect: 'mysql',
+    host: dbUrl.hostname,
+    port: dbUrl.port,
+    username: dbUrl.username,
+    password: dbUrl.password,
+    database: dbUrl.pathname.substr(1), // Remove the leading '/'
     logging: false,
     dialectOptions: {
       ssl: {
-        rejectUnauthorized: true
+        require: true,
+        rejectUnauthorized: false
       }
     }
   });
