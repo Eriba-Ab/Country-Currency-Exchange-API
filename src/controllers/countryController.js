@@ -227,7 +227,6 @@ async function getStatus(req, res) {
   }
 }
 
-const path = require('path');
 const fs = require('fs');
 async function getImage(req, res) {
   if (!fs.existsSync(SUMMARY_PATH)) {
